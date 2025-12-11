@@ -7,9 +7,15 @@ use App\Http\Controllers\Web\ExplorerController;
 use App\Http\Controllers\Web\MatchController;
 use App\Http\Controllers\ProductController;
 
+
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('welcome');
+
+Route::get('/aviso-de-privacidad', function () {
+    return Inertia::render('PrivacyPolicy');
+})->name('privacy-policy');
+
 
 Route::get('/email/verify', function () {
     return Inertia::render('Auth/VerifyEmail');
