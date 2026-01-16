@@ -46,10 +46,25 @@ class ExplorerController extends Controller
                 ->first();
         }
 
+        $posts = $company->posts()
+            ->with(['company', 'comments.company', 'likes.company'])
+            ->withCount(['likes', 'comments'])
+            ->latest()
+            ->get();
+
+        if ($user && $user->company) {
+            $userCompanyId = $user->company->id;
+            $posts->transform(function ($post) use ($userCompanyId) {
+                $post->is_liked_by_me = $post->likes->contains('company_id', $userCompanyId);
+                return $post;
+            });
+        }
+
         return Inertia::render('Explorer/Show', [
             'company' => $company,
             'products' => $products,
             'existingMatch' => $existingMatch,
+            'posts' => $posts,
         ]);
     }
 }

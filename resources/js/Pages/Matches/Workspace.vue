@@ -16,6 +16,7 @@ import axios from 'axios';
 import ProductDetailModal from '@/Components/Products/ProductDetailModal.vue';
 import Timeline from 'primevue/timeline';
 import Dropdown from 'primevue/dropdown';
+import { confetti } from '@tsparticles/confetti';
 
 const props = defineProps({
     match: Object,
@@ -142,8 +143,44 @@ const saveStatusChange = () => {
         onSuccess: () => {
             showStatusDialog.value = false;
             currentStatus.value = pendingStatus.value;
+            
+            if (currentStatus.value === 'completed') {
+                triggerBingo();
+            }
         }
     });
+};
+
+// Bingo / Confetti Logic
+const showBingoOverlay = ref(false); // Used for mini overlay now
+const statusDropdownRef = ref(null);
+
+const triggerBingo = () => {
+    // Get dropdown position
+    if (!statusDropdownRef.value) return;
+    
+    const rect = statusDropdownRef.value.getBoundingClientRect();
+    
+    // Normalize coordinates to 0-1 range for confetti
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+    showBingoOverlay.value = true;
+    
+    // Fire confetti burst from dropdown
+    confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { x, y },
+        colors: ['#bb0000', '#ffffff'],
+        disableForReducedMotion: true,
+        zIndex: 9999, // Ensure on top
+    });
+    
+    // Auto hide text after 3s
+    setTimeout(() => {
+        showBingoOverlay.value = false;
+    }, 3000);
 };
 
 const formatDate = (date) => {
@@ -170,17 +207,35 @@ const formatCurrency = (amount, currency) => {
                 </div>
                  
                  <!-- Status Dropdown -->
-                 <div class="flex items-center gap-2">
+                 <div class="flex items-center gap-2 relative">
                      <span class="text-sm font-medium text-gray-500 hidden sm:block">Deal Status:</span>
-                     <Dropdown :modelValue="currentStatus" :options="statuses" optionLabel="label" optionValue="value" 
-                         @update:modelValue="confirmStatusChange"
-                         :class="{'p-inputtext-sm': true}" 
-                         placeholder="Select Status">
-                         <template #value="slotProps">
-                             <Tag :value="statuses.find(s => s.value === slotProps.value)?.label || slotProps.value" 
-                                  :severity="slotProps.value === 'completed' ? 'success' : (slotProps.value === 'cancelled' ? 'danger' : 'info')" />
-                         </template>
-                     </Dropdown>
+                     <div ref="statusDropdownRef">
+                         <Dropdown :modelValue="currentStatus" :options="statuses" optionLabel="label" optionValue="value" 
+                             @update:modelValue="confirmStatusChange"
+                             :class="{'p-inputtext-sm': true}" 
+                             placeholder="Select Status">
+                             <template #value="slotProps">
+                                 <Tag :value="statuses.find(s => s.value === slotProps.value)?.label || slotProps.value" 
+                                      :severity="slotProps.value === 'completed' ? 'success' : (slotProps.value === 'cancelled' ? 'danger' : 'info')" />
+                             </template>
+                         </Dropdown>
+                     </div>
+                     
+                     <!-- Localized Bingo Text -->
+                     <Transition
+                        enter-active-class="transition duration-500 ease-out"
+                        enter-from-class="opacity-0 translate-y-4"
+                        enter-to-class="opacity-100 translate-y-0"
+                        leave-active-class="transition duration-500 ease-in"
+                        leave-from-class="opacity-100 translate-y-0"
+                        leave-to-class="opacity-0 -translate-y-4"
+                     >
+                        <div v-if="showBingoOverlay" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none z-50">
+                             <span class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-purple-600 drop-shadow-md whitespace-nowrap">
+                                 Bingo!
+                             </span>
+                        </div>
+                     </Transition>
                  </div>
             </div>
 
@@ -377,15 +432,21 @@ const formatCurrency = (amount, currency) => {
                  <Button label="Save Changes" icon="pi pi-check" @click="updateProduct" :loading="editForm.processing" />
              </template>
         </Dialog>
+
     </TailAdminLayout>
 </template>
 
 <style scoped>
 /* Ensure TabView takes full height */
 :deep(.p-tabview-panels) {
-    height: 100%;
+    flex: 1;
+    min-height: 0; /* Crucial for nested scrollbars in flex */
     padding: 0;
 }
+:deep(.p-tabview-panel) {
+    height: 100%;
+}
+
 :deep(.p-tabview) {
     display: flex;
     flex-direction: column;

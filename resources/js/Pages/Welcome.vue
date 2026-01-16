@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import Button from 'primevue/button';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 defineProps({
     canLogin: {
@@ -9,6 +10,22 @@ defineProps({
     canRegister: {
         type: Boolean,
     },
+});
+
+const showPlanes = ref(false);
+
+const handleScroll = () => {
+    if (window.scrollY > 50) {
+        showPlanes.value = true;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll);
 });
 </script>
 
@@ -25,6 +42,21 @@ defineProps({
             
             <!-- Grid Pattern -->
             <div class="absolute inset-0 bg-[url('/images/grid-pattern.svg')] opacity-[0.03]"></div>
+
+            <!-- Flying Planes Animation -->
+            <div v-if="showPlanes">
+                <div v-for="n in 15" :key="n" 
+                     class="absolute animate-fly-across"
+                     :style="{
+                        top: `${Math.random() * 100}%`,
+                        left: '-10%',
+                        animationDuration: `${15 + Math.random() * 20}s`,
+                        animationDelay: `${Math.random() * 10}s`,
+                        width: `${50 + Math.random() * 100}px`
+                     }">
+                     <img src="/images/avion-sin-fondo.png" alt="Plane" class="w-full h-auto opacity-30 transform -rotate-12" />
+                </div>
+            </div>
         </div>
 
         <!-- Navbar -->
@@ -153,5 +185,26 @@ defineProps({
 </template>
 
 <style scoped>
-/* Any specific non-tailwind overrides if strictly necessary, but sticking to Tailwind utility classes mostly */
+@keyframes fly-across {
+    0% {
+        transform: translateX(-100%) translateY(0) rotate(5deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateX(110vw) translateY(-20vh) rotate(5deg);
+        opacity: 0;
+    }
+}
+
+.animate-fly-across {
+    animation-name: fly-across;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
 </style>

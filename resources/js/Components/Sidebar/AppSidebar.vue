@@ -60,6 +60,11 @@ const menuGroups = computed(() => [
                 name: "My Company",
                 path: "company.edit",
             },
+            {
+                icon: "pi pi-megaphone",
+                name: "News",
+                path: "news.index",
+            },
         ],
     },
 ]);

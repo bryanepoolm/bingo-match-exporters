@@ -118,9 +118,15 @@ const getTypeName = (value) => {
         <Toast />
         
         <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
-            <h3 class="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
-                Company Profile
-            </h3>
+            <div class="flex items-center justify-between mb-5 lg:mb-7">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+                    Company Profile
+                </h3>
+                <a :href="route('explorer.show', company.id)" target="_blank" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-500 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors dark:bg-brand-900/20 dark:text-brand-400 dark:hover:bg-brand-900/40">
+                    <i class="pi pi-external-link"></i>
+                    View Public Profile
+                </a>
+            </div>
 
             <!-- Card 1: Avatar / Logo -->
             <div class="p-5 mb-6 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">

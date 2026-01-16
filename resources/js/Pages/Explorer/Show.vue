@@ -1,13 +1,18 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import TailAdminLayout from '@/Layouts/TailAdminLayout.vue';
+import PostItem from '@/Components/News/PostItem.vue';
 import { computed } from 'vue';
 
 const props = defineProps({
     company: Object,
     products: Array,
     existingMatch: Object,
+    posts: Array, // Added posts prop
 });
+
+const user = usePage().props.auth.user;
+const currentUserCompany = user?.company;
 
 const companyLogo = computed(() => {
     return props.company.logo_path 
@@ -41,6 +46,7 @@ const formatCurrency = (amount, currency) => {
 
             <!-- Profile Header -->
             <div class="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+                <!-- ... existing header content ... -->
                 <div class="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5 mt-10">
                     <div class="relative mx-auto h-30 w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:w-44 sm:p-3 border border-stroke dark:border-strokedark shadow-1">
                         <div class="relative drop-shadow-2">
@@ -106,57 +112,80 @@ const formatCurrency = (amount, currency) => {
                 </div>
             </div>
 
-            <!-- Tabs / Sections -->
-            <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
                 
-                <!-- Documents Section -->
-                <div class="rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
-                        Documents & Certifications
+                <!-- Left Column (Posts) -->
+                <div class="lg:col-span-2">
+                    <h4 class="mb-4 text-xl font-semibold text-black dark:text-white">
+                        Activity Feed
                     </h4>
                     
-                    <div v-if="company.verification_documents && company.verification_documents.length > 0" class="flex flex-col gap-4">
-                        <div v-for="(doc, index) in company.verification_documents" :key="index" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                             <div class="flex items-center gap-3">
-                                <i class="pi pi-file-pdf text-red-500 text-xl"></i>
-                                <span class="font-medium text-black dark:text-white">{{ doc.original_name || `Document ${index + 1}` }}</span>
-                            </div>
-                            <a :href="`/storage/${doc.path}`" target="_blank" class="text-primary hover:text-primary/80">
-                                <i class="pi pi-download"></i>
-                            </a>
-                        </div>
+                    <div v-if="posts && posts.length > 0" class="flex flex-col gap-6">
+                         <PostItem 
+                            v-for="post in posts" 
+                            :key="post.id" 
+                            :post="post" 
+                            :currentUserCompany="currentUserCompany"
+                        />
                     </div>
-                    <div v-else class="text-gray-500 italic text-center py-4">
-                        No public documents available.
+                    <div v-else class="rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark text-center text-gray-500">
+                        No activity to show yet.
                     </div>
                 </div>
 
-                <!-- Products Section -->
-                 <div class="rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
-                    <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
-                        Products
-                    </h4>
-
-                     <div v-if="products.length > 0" class="flex flex-col gap-4">
-                        <div v-for="product in products" :key="product.id" class="flex items-start gap-4 p-3 border rounded-lg hover:shadow-md transition-shadow">
-                            <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-stroke dark:border-strokedark">
-                                <img :src="product.primary_image ? `/storage/${product.primary_image}` : 'https://placehold.co/100'" 
-                                     :alt="product.name" 
-                                     class="h-full w-full object-cover" />
-                            </div>
-                            <div class="flex-grow">
-                                <h5 class="font-medium text-black dark:text-white">{{ product.name }}</h5>
-                                <p class="text-sm text-gray-500 line-clamp-1">{{ product.description }}</p>
-                                <div class="mt-1 font-semibold text-primary">
-                                    {{ formatCurrency(product.price_per_unit, product.currency) }} / {{ product.unit_of_measure }}
+                <!-- Right Column (Docs & Products) -->
+                <div class="flex flex-col gap-4">
+                    <!-- Documents Section -->
+                    <div class="rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
+                            Documents
+                        </h4>
+                        
+                        <div v-if="company.verification_documents && company.verification_documents.length > 0" class="flex flex-col gap-4">
+                            <div v-for="(doc, index) in company.verification_documents" :key="index" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                                 <div class="flex items-center gap-3">
+                                    <i class="pi pi-file-pdf text-red-500 text-xl"></i>
+                                    <span class="font-medium text-black dark:text-white truncate max-w-[150px]">{{ doc.original_name || `Doc ${index + 1}` }}</span>
                                 </div>
+                                <a :href="`/storage/${doc.path}`" target="_blank" class="text-primary hover:text-primary/80">
+                                    <i class="pi pi-download"></i>
+                                </a>
                             </div>
                         </div>
-                     </div>
-                     <div v-else class="text-gray-500 italic text-center py-4">
-                        No products listed.
+                        <div v-else class="text-gray-500 italic text-center py-4">
+                            No public documents.
+                        </div>
                     </div>
-                 </div>
+
+                    <!-- Products Section -->
+                     <div class="rounded-sm border border-stroke bg-white p-6 shadow-default dark:border-strokedark dark:bg-boxdark">
+                        <h4 class="mb-6 text-xl font-semibold text-black dark:text-white">
+                            Products
+                        </h4>
+    
+                         <div v-if="products.length > 0" class="flex flex-col gap-4">
+                            <div v-for="product in products.slice(0, 5)" :key="product.id" class="flex items-start gap-4 p-3 border rounded-lg hover:shadow-md transition-shadow">
+                                <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-stroke dark:border-strokedark">
+                                    <img :src="product.primary_image ? `/storage/${product.primary_image}` : 'https://placehold.co/100'" 
+                                         :alt="product.name" 
+                                         class="h-full w-full object-cover" />
+                                </div>
+                                <div class="flex-grow">
+                                    <h5 class="font-medium text-black dark:text-white">{{ product.name }}</h5>
+                                    <div class="mt-1 font-semibold text-primary">
+                                        {{ formatCurrency(product.price_per_unit, product.currency) }} / {{ product.unit_of_measure }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="products.length > 5" class="text-center mt-2">
+                                <span class="text-sm text-gray-500">+ {{ products.length - 5 }} more products</span>
+                            </div>
+                         </div>
+                         <div v-else class="text-gray-500 italic text-center py-4">
+                            No products listed.
+                        </div>
+                     </div>
+                </div>
             </div>
         </div>
     </TailAdminLayout>
