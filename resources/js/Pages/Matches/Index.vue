@@ -60,6 +60,40 @@ const deleteRequest = (id) => {
     });
 };
 
+const handleViewClick = (match) => {
+    const partner = props.type === 'sent' ? match.exporter : match.producer;
+    const isCompanyAvailable = partner && partner.company;
+
+    if (!isCompanyAvailable) {
+        confirm.require({
+            message: 'The company associated with this request is no longer available. Do you want to archive this request?',
+            header: 'Company Unavailable',
+            icon: 'pi pi-exclamation-triangle',
+            rejectProps: {
+                label: 'Close',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: 'Archive',
+                severity: 'danger'
+            },
+            accept: () => {
+                 router.delete(route('matches.destroy', match.id), {
+                    onSuccess: () => {
+                        toast.add({ severity: 'success', summary: 'Archived', detail: 'Request archived successfully', life: 3000 });
+                    },
+                    onError: () => {
+                        toast.add({ severity: 'error', summary: 'Error', detail: 'Could not archive request', life: 3000 });
+                    }
+                });
+            }
+        });
+    } else {
+        router.visit(route('matches.show', match.id));
+    }
+};
+
 const getSeverity = (status) => {
     switch (status) {
         case 'pending': return 'warning';
@@ -72,7 +106,6 @@ const getSeverity = (status) => {
 
 <template>
     <Head title="Connection Requests" />
-    <ConfirmDialog />
 
     <TailAdminLayout>
         <div class="mx-auto max-w-270">
@@ -101,11 +134,11 @@ const getSeverity = (status) => {
                         <template #body="slotProps">
                             <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                                 <div class="h-12.5 w-15 rounded-md">
-                                    <img v-if="type === 'sent'" :src="slotProps.data.exporter?.company?.logo_path ? `/storage/${slotProps.data.exporter.company.logo_path}` : `https://ui-avatars.com/api/?name=${slotProps.data.exporter?.company?.name}&background=random`" alt="Logo" class="h-full w-full object-cover rounded" />
-                                    <img v-else :src="slotProps.data.producer?.company?.logo_path ? `/storage/${slotProps.data.producer.company.logo_path}` : `https://ui-avatars.com/api/?name=${slotProps.data.producer?.company?.name}&background=random`" alt="Logo" class="h-full w-full object-cover rounded" />
+                                    <img v-if="type === 'sent'" :src="slotProps.data.exporter?.company?.logo_path ? `/storage/${slotProps.data.exporter.company.logo_path}` : `https://ui-avatars.com/api/?name=${slotProps.data.exporter?.company?.name || 'Unavailable'}&background=random`" alt="Logo" class="h-full w-full object-cover rounded" />
+                                    <img v-else :src="slotProps.data.producer?.company?.logo_path ? `/storage/${slotProps.data.producer.company.logo_path}` : `https://ui-avatars.com/api/?name=${slotProps.data.producer?.company?.name || 'Unavailable'}&background=random`" alt="Logo" class="h-full w-full object-cover rounded" />
                                 </div>
                                 <p class="text-sm font-medium text-black dark:text-white">
-                                    {{ type === 'sent' ? slotProps.data.exporter?.company?.name : slotProps.data.producer?.company?.name }}
+                                    {{ type === 'sent' ? (slotProps.data.exporter?.company?.name || 'Unavailable Company') : (slotProps.data.producer?.company?.name || 'Unavailable Company') }}
                                     <span v-if="type !== 'sent' && !slotProps.data.is_read" class="ml-2 inline-flex items-center justify-center rounded-full bg-primary py-0.5 px-2 text-xs font-medium text-white">New</span>
                                 </p>
                             </div>
@@ -124,9 +157,9 @@ const getSeverity = (status) => {
                     <Column header="Actions">
                          <template #body="slotProps">
                             <div class="flex items-center space-x-3.5">
-                                <Link :href="route('matches.show', slotProps.data.id)" class="hover:text-primary">
+                                <button @click="handleViewClick(slotProps.data)" class="hover:text-primary">
                                     <i class="pi pi-eye"></i>
-                                </Link>
+                                </button>
                                 
                                 <template v-if="type === 'sent' && (slotProps.data.status === 'pending' || slotProps.data.status === 'rejected')">
                                     <Link v-if="slotProps.data.status === 'pending'" :href="route('matches.edit', slotProps.data.id)" class="hover:text-primary">

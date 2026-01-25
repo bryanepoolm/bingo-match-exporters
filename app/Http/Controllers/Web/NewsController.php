@@ -9,6 +9,8 @@ use App\Domain\Models\Post;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
+use App\Domain\Models\Event;
+
 class NewsController extends Controller
 {
     public function index(Request $request)
@@ -25,8 +27,20 @@ class NewsController extends Controller
             return $post;
         });
 
+        $events = Event::where('status', 'active')
+            ->where(function ($query) {
+                $query->whereDate('end_date', '>=', now())
+                      ->orWhere(function ($q) {
+                          $q->whereNull('end_date')
+                            ->whereDate('start_date', '>=', now());
+                      });
+            })
+            ->orderBy('start_date')
+            ->get();
+
         return Inertia::render('News/Index', [
-            'posts' => $posts
+            'posts' => $posts,
+            'events' => $events
         ]);
     }
 

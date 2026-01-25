@@ -24,6 +24,11 @@ const menuGroups = computed(() => [
         title: "MENU",
         items: [
             {
+                icon: "pi pi-megaphone",
+                name: "News",
+                path: "news.index",
+            },
+            {
                 icon: "pi pi-th-large",
                 name: "Dashboard",
                 path: "dashboard",
@@ -60,11 +65,7 @@ const menuGroups = computed(() => [
                 name: "My Company",
                 path: "company.edit",
             },
-            {
-                icon: "pi pi-megaphone",
-                name: "News",
-                path: "news.index",
-            },
+
         ],
     },
 ]);
