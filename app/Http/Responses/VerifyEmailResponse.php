@@ -2,9 +2,9 @@
 
 namespace App\Http\Responses;
 
-use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
 
-class LoginResponse implements LoginResponseContract
+class VerifyEmailResponse implements VerifyEmailResponseContract
 {
     /**
      * Create an HTTP response that represents the object.
@@ -14,14 +14,14 @@ class LoginResponse implements LoginResponseContract
      */
     public function toResponse($request)
     {
-        if ($request->user()->role === 'admin') {
+        if ($request->user() && $request->user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
-        if (!$request->user()->company) {
+        if ($request->user() && !$request->user()->company) {
             return redirect()->route('onboarding.index');
         }
 
-        return redirect()->intended(config('fortify.home'));
+        return redirect()->intended(config('fortify.home').'?verified=1');
     }
 }

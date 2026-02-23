@@ -67,6 +67,11 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/requests/{match}/messages', [ChatController::class, 'store'])->name('matches.messages.store');
         Route::post('/requests/{match}/status', [MatchController::class, 'updateStatus'])->name('matches.status.update');
         
+        // Notifications
+        Route::get('/api/notifications', [\App\Http\Controllers\Web\NotificationController::class, 'index'])->name('notifications.index');
+        Route::patch('/api/notifications/{id}/read', [\App\Http\Controllers\Web\NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('/api/notifications/read-all', [\App\Http\Controllers\Web\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+        
         Route::get('/api/hs-codes/search', [ProductController::class, 'searchHsCodes'])->name('api.hs-codes.search');
         Route::resource('products', ProductController::class);
     });

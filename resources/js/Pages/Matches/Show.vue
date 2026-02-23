@@ -17,6 +17,7 @@ import { useForm } from '@inertiajs/vue3';
 const props = defineProps({
     match: Object,
     products: Array,
+    isReceiver: Boolean,
 });
 
 const confirm = useConfirm();
@@ -86,6 +87,25 @@ const confirmReject = () => {
     });
 };
 
+const cancelRequest = () => {
+    confirm.require({
+        message: 'Are you sure you want to cancel this connection request?',
+        header: 'Confirm Cancel',
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: () => {
+             router.delete(route('matches.destroy', props.match.id), {
+                 onSuccess: () => {
+                     toast.add({ severity: 'success', summary: 'Canceled', detail: 'You have canceled the connection request.', life: 3000 });
+                 },
+                 onError: () => {
+                     toast.add({ severity: 'error', summary: 'Error', detail: 'Could not cancel request.', life: 3000 });
+                 }
+             });
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -115,12 +135,15 @@ const confirmReject = () => {
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <!-- Actions for Exporter (who received the request) -->
-                     <!-- We assume if we are viewing this and status is pending, we can act. 
-                          Ideally check if auth user is the target, but for visual demo we assume 'pending' is enough trigger for now if we don't have user prop. -->
+                    <!-- Actions -->
                     <template v-if="match.status === 'pending'">
-                        <Button label="Reject" icon="pi pi-times" severity="danger" outlined @click="openRejectDialog" />
-                        <Button label="Accept" icon="pi pi-check" severity="success" @click="acceptRequest" />
+                        <template v-if="isReceiver">
+                            <Button label="Reject" icon="pi pi-times" severity="danger" outlined @click="openRejectDialog" />
+                            <Button label="Accept" icon="pi pi-check" severity="success" @click="acceptRequest" />
+                        </template>
+                        <template v-else>
+                            <Button label="Cancel Request" icon="pi pi-ban" severity="secondary" outlined @click="cancelRequest" />
+                        </template>
                     </template>
                     
                     <Link :href="route('matches.index')" class="p-button p-button-secondary p-button-outlined p-button-sm no-underline flex items-center justify-center px-4 py-2 font-bold" style="height: 2.5rem;">
@@ -171,6 +194,10 @@ const confirmReject = () => {
                             </h3>
                         </div>
                         <div class="p-6.5 flex flex-col gap-4">
+                            <div v-if="match.status === 'rejected'" class="mb-4 p-4 rounded-md border border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                <h4 class="text-sm font-semibold mb-2">Rejection Reason</h4>
+                                <p class="text-sm">{{ match.rejection_reason || 'No specific reason provided.' }}</p>
+                            </div>
                             <div>
                                 <label class="block text-sm font-medium text-black dark:text-white">Origin</label>
                                 <p class="text-gray-600 dark:text-gray-400">{{ match.origin }}</p>

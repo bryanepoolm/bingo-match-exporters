@@ -60,18 +60,10 @@ const formatCurrency = (amount, currency) => {
                         <p class="font-medium">{{ company.type }}</p>
                         
                         <!-- Connect Button -->
-                         <div class="mx-auto mt-4.5 mb-5.5 grid max-w-94 grid-cols-1 rounded-md border border-stroke py-2.5 shadow-1 dark:border-strokedark dark:bg-[#37404F]">
+                         <div v-if="currentUserCompany && currentUserCompany.id !== company.id" class="mx-auto mt-4.5 mb-5.5 grid max-w-94 grid-cols-1 rounded-md border border-stroke py-2.5 shadow-1 dark:border-strokedark dark:bg-[#37404F]">
                             <div class="flex flex-col items-center justify-center gap-1 border-r border-stroke px-4 dark:border-strokedark xsm:flex-row">
                                 <span class="font-semibold text-black dark:text-white">
-                                    <button 
-                                        v-if="existingMatch && existingMatch.status === 'pending'"
-                                        disabled
-                                        class="flex justify-center rounded bg-gray-500 py-2 px-6 font-medium text-white cursor-not-allowed opacity-70"
-                                    >
-                                        Request Pending
-                                    </button>
                                     <Link 
-                                        v-else
                                         :href="route('matches.create', company.id)" 
                                         class="flex justify-center rounded bg-primary py-2 px-6 font-medium text-gray hover:bg-opacity-90"
                                     >
@@ -145,9 +137,9 @@ const formatCurrency = (amount, currency) => {
                             <div v-for="(doc, index) in company.verification_documents" :key="index" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
                                  <div class="flex items-center gap-3">
                                     <i class="pi pi-file-pdf text-red-500 text-xl"></i>
-                                    <span class="font-medium text-black dark:text-white truncate max-w-[150px]">{{ doc.original_name || `Doc ${index + 1}` }}</span>
+                                    <span class="font-medium text-black dark:text-white truncate max-w-[150px]">{{ typeof doc === 'string' ? (doc.split('/').pop().split('_').slice(1).join('_') || doc.split('/').pop()) : (doc.original_name || `Doc ${index + 1}`) }}</span>
                                 </div>
-                                <a :href="`/storage/${doc.path}`" target="_blank" class="text-primary hover:text-primary/80">
+                                <a :href="typeof doc === 'string' ? `/storage/${doc}` : `/storage/${doc.path}`" target="_blank" class="text-primary hover:text-primary/80">
                                     <i class="pi pi-download"></i>
                                 </a>
                             </div>

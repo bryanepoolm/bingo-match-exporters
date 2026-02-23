@@ -60,10 +60,43 @@ class NewsController extends Controller
             $imagePath = $request->file('image')->store('posts', 'public');
         }
 
-        $request->user()->company->posts()->create([
+        $company = $request->user()->company;
+        $post = $company->posts()->create([
             'content' => $request->input('content'),
             'image_path' => $imagePath,
         ]);
+
+        // Notify partners
+        $partners = collect();
+        if ($company->type === 'exporter' || $company->type === 'both') {
+            $matches = \App\Domain\Models\BusinessMatch::where('exporter_id', $company->exporter->id)
+                ->whereIn('status', ['accepted', 'completed', 'in_progress'])
+                ->with('producer.company.user')
+                ->get();
+            foreach ($matches as $match) {
+                if ($match->producer && $match->producer->company->user) {
+                    $partners->push($match->producer->company->user);
+                }
+            }
+        }
+        if ($company->type === 'producer' || $company->type === 'both') {
+            $matches = \App\Domain\Models\BusinessMatch::where('producer_id', $company->producer->id)
+                ->whereIn('status', ['accepted', 'completed', 'in_progress'])
+                ->with('exporter.company.user')
+                ->get();
+            foreach ($matches as $match) {
+                if ($match->exporter && $match->exporter->company->user) {
+                    $partners->push($match->exporter->company->user);
+                }
+            }
+        }
+
+        $partners = $partners->unique('id');
+        $snippet = $post->content ? \Illuminate\Support\Str::limit($post->content, 50) : 'An image';
+
+        foreach ($partners as $partnerUser) {
+            $partnerUser->notify(new \App\Notifications\NewPartnerPostNotification($post, $company->name, $snippet));
+        }
 
         return back();
     }
@@ -77,6 +110,11 @@ class NewsController extends Controller
             $like->delete();
         } else {
             $post->likes()->create(['company_id' => $companyId]);
+            
+            if ($post->company_id !== $companyId && $post->company->user) {
+                $likerName = $request->user()->company->name;
+                $post->company->user->notify(new \App\Notifications\PostLikedNotification($post, $likerName));
+            }
         }
 
         return back();
@@ -86,10 +124,15 @@ class NewsController extends Controller
     {
         $request->validate(['content' => 'required|string']);
 
-        $post->comments()->create([
+        $comment = $post->comments()->create([
             'company_id' => $request->user()->company->id,
             'content' => $request->input('content')
         ]);
+
+        if ($post->company_id !== $request->user()->company->id && $post->company->user) {
+            $commenterName = $request->user()->company->name;
+            $post->company->user->notify(new \App\Notifications\NewCommentNotification($comment, $commenterName, $post));
+        }
 
         return back();
     }

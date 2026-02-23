@@ -32,7 +32,7 @@ class PartnerController extends Controller
              
              // Let's use Eloquent to get distinct producers from Accepted matches
              $matches = BusinessMatch::where('exporter_id', $userCompany->exporter->id)
-                ->where('status', 'accepted')
+                ->whereIn('status', ['accepted', 'completed', 'in_progress'])
                 ->with('producer.company')
                 ->get();
              
@@ -49,7 +49,7 @@ class PartnerController extends Controller
                     ->count();
 
                  $partners[] = [
-                     'id' => $producer->id, // Partner ID (Producer ID)
+                     'id' => $producer->company->id, // Partner ID (Company ID)
                      'company_name' => $producer->company->name,
                      'logo_path' => $producer->company->logo_path,
                      'type' => 'Producer',
@@ -60,7 +60,7 @@ class PartnerController extends Controller
              }
         } elseif ($userCompany->type === 'producer') {
              $matches = BusinessMatch::where('producer_id', $userCompany->producer->id)
-                ->where('status', 'accepted')
+                ->whereIn('status', ['accepted', 'completed', 'in_progress'])
                 ->with('exporter.company')
                 ->get();
 
@@ -75,7 +75,7 @@ class PartnerController extends Controller
                     ->count();
 
                  $partners[] = [
-                     'id' => $exporter->id,
+                     'id' => $exporter->company->id,
                      'company_name' => $exporter->company->name,
                      'logo_path' => $exporter->company->logo_path,
                      'type' => 'Exporter',

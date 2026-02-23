@@ -55,13 +55,14 @@ class ChatController extends Controller
             'type' => 'required|in:text,image,file,link',
         ]);
 
-        DB::transaction(function () use ($request, $match, $user) {
+        $message = null;
+        DB::transaction(function () use ($request, $match, $user, &$message) {
             $path = null;
             if ($request->hasFile('attachment')) {
                 $path = $request->file('attachment')->store('messages', 'public');
             }
 
-            $match->messages()->create([
+            $message = $match->messages()->create([
                 'sender_id' => $user->id,
                 'content' => $request->input('content'),
                 'attachment_path' => $path,
@@ -71,6 +72,19 @@ class ChatController extends Controller
             // Touch the match to update 'updated_at' for sorting in lists
             $match->touch();
         });
+
+        // Notify the other party
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $targetUser = $isExporter
+            ? $match->producer->company->user
+            : $match->exporter->company->user;
+
+        if ($targetUser && $message) {
+            $snippet = $message->content 
+                ? \Illuminate\Support\Str::limit($message->content, 50) 
+                : ucfirst($message->type) . ' attached';
+            $targetUser->notify(new \App\Notifications\NewChatMessageNotification($match, $user->company->name, $snippet));
+        }
 
         // In a real implementation, we would broadcast an event here for realtime updates.
         // For now, we return success and let the frontend poll or reload.

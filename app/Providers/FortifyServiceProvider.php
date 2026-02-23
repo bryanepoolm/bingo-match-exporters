@@ -60,6 +60,11 @@ class FortifyServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(
+            \Laravel\Fortify\Contracts\VerifyEmailResponse::class,
+            \App\Http\Responses\VerifyEmailResponse::class
+        );
+
+        $this->app->singleton(
             \Laravel\Fortify\Contracts\LogoutResponse::class,
             \App\Http\Responses\LogoutResponse::class
         );

@@ -110,8 +110,8 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
                         
                         <!-- Step 1: Products -->
                         <div v-if="currentStep === 1">
-                            <h4 class="mb-4 text-xl font-semibold text-black dark:text-white">Select Products to Offer</h4>
-                            <p class="mb-6 text-sm text-gray-500">Choose which of your products you want to propose to this exporter.</p>
+                            <h4 class="mb-4 text-xl font-semibold text-black dark:text-white">Select Products</h4>
+                            <p class="mb-6 text-sm text-gray-500">Choose the products for this connection request.</p>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                 <div v-for="product in myProducts" :key="product.id" 
@@ -142,8 +142,7 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
                                 </div>
                             </div>
                              <div v-if="myProducts.length === 0" class="text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
-                                <p>You don't have any visible products listed.</p>
-                                <Link :href="route('products.create')" class="text-primary hover:underline">Create a product first</Link>
+                                <p>No products available to select.</p>
                             </div>
                             <Message v-if="form.errors.products" severity="error" :closable="false">{{ form.errors.products }}</Message>
                         </div>

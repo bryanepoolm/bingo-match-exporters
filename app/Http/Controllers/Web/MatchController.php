@@ -15,30 +15,34 @@ class MatchController extends Controller
     {
         $user = $request->user();
         
-        // Ensure user has a company and is a producer
-        if (!$user->company || $user->company->type !== 'producer') {
-            return redirect()->route('dashboard')->with('error', 'Only producers can initiate connections.');
+        if (!$user->company) {
+            return redirect()->route('dashboard')->with('error', 'You need a company profile to initiate connections.');
         }
 
-        // Check if connection already exists
-        $exists = BusinessMatch::where('producer_id', $user->company->producer->id)
-            ->where('exporter_id', $company->exporter->id)
-            ->exists();
+        $initiatorType = $user->company->type;
+        $targetType = $company->type;
 
-        if ($exists) {
-            return redirect()->route('explorer.show', $company->id)
-                ->with('error', 'You already have a connection request with this company.');
+        if (($initiatorType === 'exporter' && $targetType === 'exporter') || ($initiatorType === 'producer' && $targetType === 'producer')) {
+            return redirect()->route('dashboard')->with('error', 'You can only connect with companies of complementary types.');
         }
 
-        // Load producer's products for selection
-        $producerProducts = $user->company->products()
+        // Allow multiple connections to the same company by removing the $exists check
+
+        // If the initiator is an exporter, they are selecting the producer's (target's) products
+        if ($initiatorType === 'exporter' || ($initiatorType === 'both' && $targetType === 'producer')) {
+            $productsField = $company->products();
+        } else {
+            $productsField = $user->company->products();
+        }
+
+        $producerProducts = $productsField
             ->select('id', 'name', 'primary_image')
             ->where('status', 'active')
             ->whereIn('visibility', ['public', 'partners_only'])
             ->get();
 
         return Inertia::render('Matches/Create', [
-            'targetCompany' => $company->load('exporter'),
+            'targetCompany' => $company->load($targetType === 'exporter' ? 'exporter' : 'producer'),
             'myProducts' => $producerProducts,
         ]);
     }
@@ -55,12 +59,29 @@ class MatchController extends Controller
         ]);
 
         $user = $request->user();
+        $initiatorType = $user->company->type;
+        $targetType = $company->type;
+
+        $producerId = null;
+        $exporterId = null;
+
+        if ($initiatorType === 'exporter' || ($initiatorType === 'both' && $targetType === 'producer')) {
+            $producerId = $company->producer->id;
+            $exporterId = $user->company->exporter->id;
+        } else {
+            $producerId = $user->company->producer->id;
+            $exporterId = $company->exporter->id;
+        }
+
+        $initiatorId = $initiatorType === 'exporter' ? $exporterId : $producerId;
 
         // Transactional creation
-        DB::transaction(function () use ($request, $company, $user) {
-            BusinessMatch::create([
-                'producer_id' => $user->company->producer->id,
-                'exporter_id' => $company->exporter->id,
+        DB::transaction(function () use ($request, $producerId, $exporterId, $initiatorType, $initiatorId, $user, $company) {
+            $match = BusinessMatch::create([
+                'producer_id' => $producerId,
+                'exporter_id' => $exporterId,
+                'initiator_type' => $initiatorType,
+                'initiator_id' => $initiatorId,
                 'status' => 'pending',
                 'origin' => $request->origin,
                 'destination' => $request->destination,
@@ -68,6 +89,10 @@ class MatchController extends Controller
                 'message' => $request->message,
                 'products' => $request->products, // casted to json automatically
             ]);
+
+            if ($company->user) {
+                $company->user->notify(new \App\Notifications\ConnectionRequestReceivedNotification($match, $user->company->name));
+            }
         });
 
         return redirect()->route('dashboard')->with('success', 'Connection request sent successfully!');
@@ -161,9 +186,30 @@ class MatchController extends Controller
             ]);
         }
 
+        // Determine if the current user is the receiver
+        $isReceiver = false;
+        
+        // If initiator is null (old data), fallback to assuming producer initiated 
+        // because previously only producers could initiate.
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+        $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
+
+        if ($actualInitiatorType === 'producer') {
+            // Producer initiated, so Exporter is the receiver
+            if ($isExporter && $user->company->exporter->id === $match->exporter_id) {
+                $isReceiver = true;
+            }
+        } else {
+            // Exporter initiated, so Producer is the receiver
+            if ($isProducer && $user->company->producer->id === $match->producer_id) {
+                $isReceiver = true;
+            }
+        }
+
         return Inertia::render('Matches/Show', [
             'match' => $match,
             'products' => $products,
+            'isReceiver' => $isReceiver,
         ]);
     }
 
@@ -217,10 +263,23 @@ class MatchController extends Controller
 
     public function destroy(Request $request, BusinessMatch $match)
     {
-         $user = $request->user();
+        $user = $request->user();
         
-        if ($match->producer_id !== $user->company->producer->id) {
-            abort(403);
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $isProducer = $user->company->producer && $match->producer_id === $user->company->producer->id;
+
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+        $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
+
+        $isInitiator = false;
+        if ($actualInitiatorType === 'producer' && $isProducer && $user->company->producer->id === $actualInitiatorId) {
+            $isInitiator = true;
+        } elseif ($actualInitiatorType === 'exporter' && $isExporter && $user->company->exporter->id === $actualInitiatorId) {
+            $isInitiator = true;
+        }
+
+        if (!$isInitiator) {
+            abort(403, 'Only the sender can cancel this request.');
         }
 
         if ($match->status === 'accepted') {
@@ -237,8 +296,23 @@ class MatchController extends Controller
      */
     public function reject(Request $request, BusinessMatch $match)
     {
-        if ($match->exporter_id !== $request->user()->company->exporter->id) {
-             abort(403);
+        $user = $request->user();
+        
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $isProducer = $user->company->producer && $match->producer_id === $user->company->producer->id;
+
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+        $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
+
+        $isReceiver = false;
+        if ($actualInitiatorType === 'producer' && $isExporter && $user->company->exporter->id === $match->exporter_id) {
+            $isReceiver = true;
+        } elseif ($actualInitiatorType === 'exporter' && $isProducer && $user->company->producer->id === $match->producer_id) {
+            $isReceiver = true;
+        }
+
+        if (!$isReceiver) {
+             abort(403, 'Only the receiver can reject this request.');
         }
 
         $validated = $request->validate([
@@ -251,13 +325,34 @@ class MatchController extends Controller
             'is_read' => true
         ]);
 
+        $initiatorUser = $actualInitiatorType === 'producer' 
+            ? $match->producer->company->user 
+            : $match->exporter->company->user;
+
+        if ($initiatorUser) {
+            $initiatorUser->notify(new \App\Notifications\ConnectionRequestRejectedNotification($match, $user->company->name));
+        }
+
         return redirect()->back()->with('success', 'Request rejected successfully.');
     }
     public function accept(Request $request, BusinessMatch $match)
     {
-        // Only the recipient (Exporter) can accept a request
-        if ($match->exporter_id !== $request->user()->company->exporter->id) {
-             abort(403);
+        $user = $request->user();
+        
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $isProducer = $user->company->producer && $match->producer_id === $user->company->producer->id;
+
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+
+        $isReceiver = false;
+        if ($actualInitiatorType === 'producer' && $isExporter && $user->company->exporter->id === $match->exporter_id) {
+            $isReceiver = true;
+        } elseif ($actualInitiatorType === 'exporter' && $isProducer && $user->company->producer->id === $match->producer_id) {
+            $isReceiver = true;
+        }
+
+        if (!$isReceiver) {
+             abort(403, 'Only the receiver can accept this request.');
         }
 
         $match->update([
@@ -272,6 +367,14 @@ class MatchController extends Controller
              'new_status' => 'accepted',
              'notes' => 'Match accepted by exporter.',
         ]);
+
+        $initiatorUser = $actualInitiatorType === 'producer' 
+            ? $match->producer->company->user 
+            : $match->exporter->company->user;
+
+        if ($initiatorUser) {
+            $initiatorUser->notify(new \App\Notifications\ConnectionRequestAcceptedNotification($match, $user->company->name));
+        }
 
         return redirect()->back()->with('success', 'Request accepted. You are now partners!');
     }
@@ -310,6 +413,15 @@ class MatchController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
         });
+
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $targetUser = $isExporter
+            ? $match->producer->company->user
+            : $match->exporter->company->user;
+
+        if ($targetUser) {
+            $targetUser->notify(new \App\Notifications\ConnectionRequestStatusChangedNotification($match, $user->company->name, $newStatus));
+        }
         
         return back()->with('success', 'Status updated successfully.');
     }

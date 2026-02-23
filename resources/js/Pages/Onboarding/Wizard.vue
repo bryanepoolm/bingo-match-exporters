@@ -29,7 +29,7 @@ const submit = () => {
     <Head title="Complete Profile" />
     <div class="flex items-center justify-center min-h-screen bg-surface-50 dark:bg-surface-900 p-4">
         <div class="w-full max-w-2xl p-8 bg-white dark:bg-surface-800 rounded-xl shadow-lg border border-surface-200 dark:border-surface-700">
-            <h2 class="text-2xl font-bold mb-2 text-surface-900 dark:text-surface-0">Welcome to the Marketplace!</h2>
+            <h2 class="text-2xl font-bold mb-2 text-surface-900 dark:text-surface-0">Welcome to Bingo!</h2>
             <p class="text-surface-600 dark:text-surface-400 mb-6">Let's get your company set up. Please provide your company details to continue.</p>
             
             <form @submit.prevent="submit" class="space-y-6">
