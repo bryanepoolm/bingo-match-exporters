@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ConnectionRequestAcceptedNotification extends Notification
+class ConnectionRequestAcceptedNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -30,7 +30,22 @@ class ConnectionRequestAcceptedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('matches.show', $this->match->id);
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('Solicitud aceptada - Bingo Match')
+            ->greeting('¡Excelentes noticias!')
+            ->line("{$this->accepterName} ha aceptado tu solicitud de conexión.")
+            ->action('Ver Conexión', $url)
+            ->line('¡Ya puedes empezar a colaborar!');
     }
 
     /**

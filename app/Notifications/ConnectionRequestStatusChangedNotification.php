@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ConnectionRequestStatusChangedNotification extends Notification
+class ConnectionRequestStatusChangedNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -32,7 +32,21 @@ class ConnectionRequestStatusChangedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('matches.show', $this->match->id);
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('Cambio de estado en conexión - Bingo Match')
+            ->greeting('Hola,')
+            ->line("{$this->changerName} ha cambiado el estado de tu conexión a: {$this->newStatus}.")
+            ->action('Ver Detalles', $url);
     }
 
     /**

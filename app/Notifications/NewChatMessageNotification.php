@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewChatMessageNotification extends Notification
+class NewChatMessageNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -32,7 +32,22 @@ class NewChatMessageNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('matches.show', $this->match->id);
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('Nuevo mensaje - Bingo Match')
+            ->greeting('Hola,')
+            ->line("Tienes un nuevo mensaje de {$this->senderName}:")
+            ->line("\"{$this->snippet}\"")
+            ->action('Responder', $url);
     }
 
     /**

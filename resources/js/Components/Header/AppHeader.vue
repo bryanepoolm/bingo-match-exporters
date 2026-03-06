@@ -31,6 +31,7 @@ const toggleDarkMode = () => {
     }
 };
 
+const dropdownOpen = ref(false);
 const notificationsOpen = ref(false);
 const notifications = ref([]);
 const unreadCount = ref(0);
@@ -89,7 +90,21 @@ const markAllAsRead = async () => {
 onMounted(() => {
     if (user) {
         fetchNotifications();
-        setInterval(fetchNotifications, 60000);
+        
+        if (window.Echo) {
+            window.Echo.private(`App.Domain.Models.User.${user.id}`)
+                .notification((notification) => {
+                    const newNotification = {
+                        id: notification.id,
+                        type: notification.type,
+                        read_at: null,
+                        created_at: new Date().toISOString(),
+                        data: notification
+                    };
+                    notifications.value.unshift(newNotification);
+                    unreadCount.value++;
+                });
+        }
     }
 });
 

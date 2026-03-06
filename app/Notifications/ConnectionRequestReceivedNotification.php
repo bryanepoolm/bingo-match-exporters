@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ConnectionRequestReceivedNotification extends Notification
+class ConnectionRequestReceivedNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -30,7 +30,22 @@ class ConnectionRequestReceivedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('matches.show', $this->match->id);
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('Nueva solicitud de conexión - Bingo Match')
+            ->greeting('Hola,')
+            ->line("Has recibido una nueva solicitud de conexión de {$this->senderName}.")
+            ->action('Ver Solicitud', $url)
+            ->line('¡Gracias por usar Bingo Match!');
     }
 
     /**

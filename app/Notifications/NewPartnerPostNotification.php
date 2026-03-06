@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewPartnerPostNotification extends Notification
+class NewPartnerPostNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -32,7 +32,22 @@ class NewPartnerPostNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('news.index');
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('Nueva publicación de un socio - Bingo Match')
+            ->greeting('Hola,')
+            ->line("{$this->partnerName} ha creado una nueva publicación:")
+            ->line("\"{$this->titleSnippet}\"")
+            ->action('Ver Publicación', $url);
     }
 
     /**

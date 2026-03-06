@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PostLikedNotification extends Notification
+class PostLikedNotification extends Notification implements \Illuminate\Contracts\Broadcasting\ShouldBroadcast
 {
     use Queueable;
 
@@ -30,7 +30,21 @@ class PostLikedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'mail', 'broadcast'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Notifications\Messages\MailMessage
+    {
+        $url = route('news.index');
+
+        return (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('A alguien le gustó tu publicación - Bingo Match')
+            ->greeting('Hola,')
+            ->line("A {$this->likerName} le ha gustado tu publicación.")
+            ->action('Ver Publicación', $url);
     }
 
     /**
