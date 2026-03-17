@@ -16,14 +16,14 @@ class MatchController extends Controller
         $user = $request->user();
         
         if (!$user->company) {
-            return redirect()->route('dashboard')->with('error', 'You need a company profile to initiate connections.');
+            return redirect()->route('news.index')->with('error', 'You need a company profile to initiate connections.');
         }
 
         $initiatorType = $user->company->type;
         $targetType = $company->type;
 
         if (($initiatorType === 'exporter' && $targetType === 'exporter') || ($initiatorType === 'producer' && $targetType === 'producer')) {
-            return redirect()->route('dashboard')->with('error', 'You can only connect with companies of complementary types.');
+            return redirect()->route('news.index')->with('error', 'You can only connect with companies of complementary types.');
         }
 
         // Allow multiple connections to the same company by removing the $exists check
@@ -113,7 +113,7 @@ class MatchController extends Controller
             }
         });
 
-        return redirect()->route('dashboard')->with('success', 'Connection request sent successfully!');
+        return redirect()->route('news.index')->with('success', 'Connection request sent successfully!');
     }
 
     public function index(Request $request)
@@ -121,7 +121,7 @@ class MatchController extends Controller
         $user = $request->user();
         
         if (!$user->company) {
-             return redirect()->route('dashboard');
+             return redirect()->route('news.index');
         }
 
         $query = BusinessMatch::query();
@@ -169,7 +169,7 @@ class MatchController extends Controller
             ]);
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('news.index');
     }
 
     public function show(Request $request, BusinessMatch $match)

@@ -36,6 +36,6 @@ class OnboardingController extends Controller
         
         // Logistics logic can be added here if needed
 
-        return redirect()->route('dashboard');
+        return redirect()->route('news.index');
     }
 }

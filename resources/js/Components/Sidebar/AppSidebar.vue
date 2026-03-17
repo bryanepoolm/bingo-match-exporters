@@ -28,11 +28,7 @@ const menuGroups = computed(() => [
                 name: "News",
                 path: "news.index",
             },
-            {
-                icon: "pi pi-th-large",
-                name: "Dashboard",
-                path: "dashboard",
-            },
+
             ...(isProducer.value ? [{
                 icon: "pi pi-box",
                 name: "My Products",
@@ -79,7 +75,7 @@ const menuGroups = computed(() => [
 <template>
     <aside
         :class="[
-            'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200',
+            'fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-[999] border-r border-gray-200',
             {
                 'lg:w-[290px]': isExpanded || isMobileOpen || isHovered,
                 'lg:w-[90px]': !isExpanded && !isHovered,
@@ -97,7 +93,7 @@ const menuGroups = computed(() => [
                 !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-start',
             ]"
         >
-            <Link :href="route('dashboard')">
+            <Link :href="route('news.index')">
                 <span v-if="isExpanded || isHovered || isMobileOpen" class="text-2xl font-bold text-brand-500 dark:text-white">
                     Bingo
                 </span>

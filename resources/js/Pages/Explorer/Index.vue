@@ -1,5 +1,7 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 import TailAdminLayout from '@/Layouts/TailAdminLayout.vue';
 import InputText from 'primevue/inputtext';
 import IconField from 'primevue/iconfield';
@@ -7,7 +9,10 @@ import InputIcon from 'primevue/inputicon';
 
 defineProps({
     companies: Object,
+    filters: Object,
 });
+
+const searchQuery = ref('');
 
 const getBadgeColor = (type) => {
     switch (type) {
@@ -23,6 +28,21 @@ const getBadgeColor = (type) => {
             return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
     }
 };
+
+// Initialize search query from props if present
+watch(() => window.location.search, () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('search')) {
+        searchQuery.value = params.get('search');
+    }
+}, { immediate: true });
+
+watch(searchQuery, debounce((value) => {
+    router.get(route('explorer.index'), { search: value }, {
+        preserveState: true,
+        replace: true,
+    });
+}, 300));
 </script>
 
 <template>
@@ -35,7 +55,7 @@ const getBadgeColor = (type) => {
             </h2>
             <nav>
                 <ol class="flex items-center gap-2">
-                    <li><Link class="font-medium" :href="route('dashboard')">Dashboard /</Link></li>
+                    <li><Link class="font-medium" :href="route('news.index')">News /</Link></li>
                     <li class="font-medium text-primary">Explorer</li>
                 </ol>
             </nav>
@@ -50,12 +70,14 @@ const getBadgeColor = (type) => {
                     <div class="w-full md:w-auto">
                         <div class="relative">
                             <input
+                                v-model="searchQuery"
                                 type="text"
                                 placeholder="Search companies..."
                                 class="w-full rounded-lg border-[1.5px] border-stroke bg-transparent py-3 px-5 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
                             />
                             <span class="absolute right-4 top-4">
-                                <i class="pi pi-search text-xl opacity-50"></i>
+                                <i class="pi pi-spin pi-spinner text-xl opacity-50" v-if="companies.data === undefined"></i>
+                                <i class="pi pi-search text-xl opacity-50" v-else></i>
                             </span>
                         </div>
                     </div>

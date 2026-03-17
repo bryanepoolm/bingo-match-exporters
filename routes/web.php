@@ -27,9 +27,6 @@ Route::get('/search/companies', [\App\Http\Controllers\Web\PublicSearchControlle
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::middleware(['redirect.admins'])->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Dashboard/Index');
-        })->name('dashboard');
 
         Route::get('/onboarding', [App\Http\Controllers\Web\OnboardingController::class, 'index'])->name('onboarding.index');
         Route::post('/onboarding', [App\Http\Controllers\Web\OnboardingController::class, 'store'])->name('onboarding.store');

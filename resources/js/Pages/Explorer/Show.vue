@@ -37,7 +37,7 @@ const formatCurrency = (amount, currency) => {
                 </h2>
                 <nav>
                     <ol class="flex items-center gap-2">
-                        <li><Link class="font-medium" :href="route('dashboard')">Dashboard /</Link></li>
+                        <li><Link class="font-medium" :href="route('news.index')">News /</Link></li>
                         <li><Link class="font-medium" :href="route('explorer.index')">Explorer /</Link></li>
                         <li class="font-medium text-primary">Profile</li>
                     </ol>

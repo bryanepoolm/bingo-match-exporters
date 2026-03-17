@@ -30,7 +30,7 @@ const topbarMenuClasses = computed(() => {
 
 <template>
     <div class="layout-topbar">
-        <Link :href="route('dashboard')" class="layout-topbar-logo">
+        <Link :href="route('news.index')" class="layout-topbar-logo">
             <span class="text-xl font-bold text-primary-600 dark:text-primary-400">B2B Market</span>
         </Link>
 

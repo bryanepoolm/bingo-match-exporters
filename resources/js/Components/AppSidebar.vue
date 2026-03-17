@@ -15,7 +15,7 @@ const menu = [
         
         <!-- Logo Area -->
         <div class="h-[var(--topbar-height)] flex items-center justify-center border-b border-surface-200 dark:border-surface-700">
-            <Link :href="route('dashboard')" class="flex items-center gap-2 text-2xl font-bold text-primary-600">
+            <Link :href="route('news.index')" class="flex items-center gap-2 text-2xl font-bold text-primary-600">
                 <i class="pi pi-diamond text-2xl"></i>
                 <span>DIAMOND</span>
             </Link>

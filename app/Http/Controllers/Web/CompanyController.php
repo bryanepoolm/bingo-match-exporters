@@ -33,7 +33,7 @@ class CompanyController extends Controller
             $company->exporter()->create([]);
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('news.index');
     }
 
     public function edit(Request $request)

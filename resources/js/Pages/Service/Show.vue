@@ -23,7 +23,7 @@ const formatCurrency = (amount, currency) => {
                 </h2>
                 <nav>
                     <ol class="flex items-center gap-2">
-                        <li><Link class="font-medium" :href="route('dashboard')">Dashboard /</Link></li>
+                        <li><Link class="font-medium" :href="route('news.index')">News /</Link></li>
                          <!-- Back link logic could be improved to know if came from services or requests, for now default to generic or history back -->
                         <li class="font-medium text-primary">Service</li>
                     </ol>

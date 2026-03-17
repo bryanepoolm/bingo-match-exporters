@@ -39,7 +39,6 @@ const deleteProduct = (id) => {
 
 <template>
     <Head title="My Products" />
-    <ConfirmDialog />
 
     <TailAdminLayout>
         <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
