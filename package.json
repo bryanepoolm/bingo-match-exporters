@@ -25,6 +25,8 @@
         "@primevue/themes": "^4.5.1",
         "@tsparticles/confetti": "^3.9.1",
         "leaflet": "^1.9.4",
+        "loadash": "^1.0.0",
+        "lodash": "^4.17.23",
         "primeicons": "^7.0.0",
         "primevue": "^4.5.1",
         "vue": "^3.5.25",

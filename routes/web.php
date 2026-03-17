@@ -22,6 +22,9 @@ Route::get('/email/verify', function () {
     return Inertia::render('Auth/VerifyEmail');
 })->middleware('auth')->name('verification.notice');
 
+// Public Search Route
+Route::get('/search/companies', [\App\Http\Controllers\Web\PublicSearchController::class, 'search'])->name('search.companies');
+
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::middleware(['redirect.admins'])->group(function () {
         Route::get('/dashboard', function () {
