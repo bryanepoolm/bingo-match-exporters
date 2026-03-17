@@ -38,4 +38,9 @@ class Exporter extends Model
     {
         return $this->belongsToMany(Capability::class);
     }
+
+    public function services(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Service::class);
+    }
 }

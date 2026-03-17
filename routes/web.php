@@ -77,6 +77,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         
         Route::get('/api/hs-codes/search', [ProductController::class, 'searchHsCodes'])->name('api.hs-codes.search');
         Route::resource('products', ProductController::class);
+        Route::resource('services', \App\Http\Controllers\ServiceController::class);
     });
 
     // Admin Routes

@@ -28,34 +28,50 @@ class MatchController extends Controller
 
         // Allow multiple connections to the same company by removing the $exists check
 
-        // If the initiator is an exporter, they are selecting the producer's (target's) products
-        if ($initiatorType === 'exporter' || ($initiatorType === 'both' && $targetType === 'producer')) {
-            $productsField = $company->products();
-        } else {
-            $productsField = $user->company->products();
-        }
+        $myProducts = [];
+        $myServices = [];
 
-        $producerProducts = $productsField
-            ->select('id', 'name', 'primary_image')
-            ->where('status', 'active')
-            ->whereIn('visibility', ['public', 'partners_only'])
-            ->get();
+        if ($initiatorType === 'exporter' || ($initiatorType === 'both' && $targetType === 'producer')) {
+            // Exporters offer their own services
+            $myServices = $user->company->services()
+                ->select('id', 'name', 'description')
+                ->where('status', 'active')
+                ->get();
+        } else {
+            // Producers offer their own products
+            $myProducts = $user->company->products()
+                ->select('id', 'name', 'primary_image')
+                ->where('status', 'active')
+                ->whereIn('visibility', ['public', 'partners_only'])
+                ->get();
+        }
 
         return Inertia::render('Matches/Create', [
             'targetCompany' => $company->load($targetType === 'exporter' ? 'exporter' : 'producer'),
-            'myProducts' => $producerProducts,
+            'myProducts' => $myProducts,
+            'myServices' => $myServices,
+            'initiatorType' => $initiatorType,
+            'targetType' => $targetType,
         ]);
     }
 
     public function store(Request $request, Company $company)
     {
+        $user = $request->user();
+        $initiatorType = $user->company->type;
+        $targetType = $company->type;
+
+        $isExporterInitiator = ($initiatorType === 'exporter' || ($initiatorType === 'both' && $targetType === 'producer'));
+
         $request->validate([
             'origin' => 'required|string|max:255',
             'destination' => 'required|string|max:255',
             'tentative_date' => 'required|date|after:today',
             'message' => 'nullable|string|max:1000',
-            'products' => 'required|array|min:1',
+            'products' => $isExporterInitiator ? 'nullable|array' : 'required|array|min:1',
             'products.*' => 'exists:products,id',
+            'services' => $isExporterInitiator ? 'required|array|min:1' : 'nullable|array',
+            'services.*' => 'exists:services,id',
         ]);
 
         $user = $request->user();
@@ -73,14 +89,15 @@ class MatchController extends Controller
             $exporterId = $company->exporter->id;
         }
 
-        $initiatorId = $initiatorType === 'exporter' ? $exporterId : $producerId;
+        $initiatorId = $isExporterInitiator ? $exporterId : $producerId;
+        $savedInitiatorType = $isExporterInitiator ? 'exporter' : 'producer';
 
         // Transactional creation
-        DB::transaction(function () use ($request, $producerId, $exporterId, $initiatorType, $initiatorId, $user, $company) {
+        DB::transaction(function () use ($request, $producerId, $exporterId, $savedInitiatorType, $initiatorId, $user, $company) {
             $match = BusinessMatch::create([
                 'producer_id' => $producerId,
                 'exporter_id' => $exporterId,
-                'initiator_type' => $initiatorType,
+                'initiator_type' => $savedInitiatorType,
                 'initiator_id' => $initiatorId,
                 'status' => 'pending',
                 'origin' => $request->origin,
@@ -88,6 +105,7 @@ class MatchController extends Controller
                 'tentative_date' => $request->tentative_date,
                 'message' => $request->message,
                 'products' => $request->products, // casted to json automatically
+                'services' => $request->services, // casted to json automatically
             ]);
 
             if ($company->user) {
@@ -175,6 +193,8 @@ class MatchController extends Controller
         
         // Fetch product details for the products in the request
         $products = \App\Domain\Models\Product::whereIn('id', $match->products ?? [])->get();
+        // Fetch service details for the services in the request
+        $services = \App\Domain\Models\Service::whereIn('id', $match->services ?? [])->get();
 
         if ($match->status === 'accepted' || in_array($match->status, ['in_progress', 'completed', 'cancelled'])) {
              // Load timeline
@@ -183,6 +203,7 @@ class MatchController extends Controller
              return Inertia::render('Matches/Workspace', [
                 'match' => $match,
                 'products' => $products,
+                'services' => $services,
             ]);
         }
 
@@ -206,10 +227,21 @@ class MatchController extends Controller
             }
         }
 
+        $myProducts = [];
+        if ($isProducer) {
+            $myProducts = $user->company->products()
+                ->select('id', 'name', 'primary_image')
+                ->where('status', 'active')
+                ->whereIn('visibility', ['public', 'partners_only'])
+                ->get();
+        }
+
         return Inertia::render('Matches/Show', [
             'match' => $match,
             'products' => $products,
+            'services' => $services,
             'isReceiver' => $isReceiver,
+            'myProducts' => $myProducts,
         ]);
     }
 
@@ -217,8 +249,20 @@ class MatchController extends Controller
     {
         $user = $request->user();
         
-        // Only producer can edit
-        if ($match->producer_id !== $user->company->producer->id) {
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $isProducer = $user->company->producer && $match->producer_id === $user->company->producer->id;
+
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+        $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
+
+        $isInitiator = false;
+        if ($actualInitiatorType === 'producer' && $isProducer && $user->company->producer->id === $actualInitiatorId) {
+            $isInitiator = true;
+        } elseif ($actualInitiatorType === 'exporter' && $isExporter && $user->company->exporter->id === $actualInitiatorId) {
+            $isInitiator = true;
+        }
+
+        if (!$isInitiator) {
             abort(403);
         }
 
@@ -236,7 +280,20 @@ class MatchController extends Controller
     {
          $user = $request->user();
         
-        if ($match->producer_id !== $user->company->producer->id) {
+        $isExporter = $user->company->exporter && $match->exporter_id === $user->company->exporter->id;
+        $isProducer = $user->company->producer && $match->producer_id === $user->company->producer->id;
+
+        $actualInitiatorType = $match->initiator_type ?? 'producer';
+        $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
+
+        $isInitiator = false;
+        if ($actualInitiatorType === 'producer' && $isProducer && $user->company->producer->id === $actualInitiatorId) {
+            $isInitiator = true;
+        } elseif ($actualInitiatorType === 'exporter' && $isExporter && $user->company->exporter->id === $actualInitiatorId) {
+            $isInitiator = true;
+        }
+
+        if (!$isInitiator) {
             abort(403);
         }
 
@@ -272,10 +329,14 @@ class MatchController extends Controller
         $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
 
         $isInitiator = false;
-        if ($actualInitiatorType === 'producer' && $isProducer && $user->company->producer->id === $actualInitiatorId) {
-            $isInitiator = true;
-        } elseif ($actualInitiatorType === 'exporter' && $isExporter && $user->company->exporter->id === $actualInitiatorId) {
-            $isInitiator = true;
+        if ($actualInitiatorType === 'producer') {
+            if ($isProducer && $user->company->producer->id === $actualInitiatorId) {
+                $isInitiator = true;
+            }
+        } else {
+            if ($isExporter && $user->company->exporter->id === $actualInitiatorId) {
+                $isInitiator = true;
+            }
         }
 
         if (!$isInitiator) {
@@ -305,10 +366,16 @@ class MatchController extends Controller
         $actualInitiatorId = $match->initiator_id ?? $match->producer_id;
 
         $isReceiver = false;
-        if ($actualInitiatorType === 'producer' && $isExporter && $user->company->exporter->id === $match->exporter_id) {
-            $isReceiver = true;
-        } elseif ($actualInitiatorType === 'exporter' && $isProducer && $user->company->producer->id === $match->producer_id) {
-            $isReceiver = true;
+        if ($actualInitiatorType === 'producer') {
+            // Producer initiated, so Exporter is the receiver
+            if ($isExporter && $user->company->exporter->id === $match->exporter_id) {
+                $isReceiver = true;
+            }
+        } else {
+            // Exporter initiated, so Producer is the receiver
+            if ($isProducer && $user->company->producer->id === $match->producer_id) {
+                $isReceiver = true;
+            }
         }
 
         if (!$isReceiver) {
@@ -345,20 +412,51 @@ class MatchController extends Controller
         $actualInitiatorType = $match->initiator_type ?? 'producer';
 
         $isReceiver = false;
-        if ($actualInitiatorType === 'producer' && $isExporter && $user->company->exporter->id === $match->exporter_id) {
-            $isReceiver = true;
-        } elseif ($actualInitiatorType === 'exporter' && $isProducer && $user->company->producer->id === $match->producer_id) {
-            $isReceiver = true;
+        if ($actualInitiatorType === 'producer') {
+            // Producer initiated, so Exporter is the receiver
+            if ($isExporter && $user->company->exporter->id === $match->exporter_id) {
+                $isReceiver = true;
+            }
+        } else {
+            // Exporter initiated, so Producer is the receiver
+            if ($isProducer && $user->company->producer->id === $match->producer_id) {
+                $isReceiver = true;
+            }
         }
 
         if (!$isReceiver) {
              abort(403, 'Only the receiver can accept this request.');
         }
 
-        $match->update([
-            'status' => 'accepted',
-            'is_read' => true
-        ]);
+        if ($actualInitiatorType === 'exporter') {
+            $validated = $request->validate([
+                'products' => 'required|array|min:1',
+                'products.*' => 'exists:products,id',
+                'origin' => 'required|string|max:255',
+                'destination' => 'required|string|max:255',
+                'tentative_date' => 'required|date|after:today',
+            ]);
+
+            // Ensure products belong to the producer
+            $validProductIds = $user->company->products()->whereIn('id', $validated['products'])->pluck('id')->toArray();
+            if (count($validProductIds) !== count($validated['products'])) {
+                return back()->withErrors(['products' => 'Invalid products selected.']);
+            }
+
+            $match->update([
+                'status' => 'accepted',
+                'is_read' => true,
+                'products' => $validProductIds,
+                'origin' => $validated['origin'],
+                'destination' => $validated['destination'],
+                'tentative_date' => $validated['tentative_date'],
+            ]);
+        } else {
+            $match->update([
+                'status' => 'accepted',
+                'is_read' => true
+            ]);
+        }
         
         // Initial timeline entry
         $match->timelines()->create([

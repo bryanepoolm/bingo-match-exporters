@@ -60,4 +60,9 @@ class Company extends Model
     {
         return $this->hasMany(Post::class);
     }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(Service::class);
+    }
 }

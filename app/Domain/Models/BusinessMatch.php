@@ -17,6 +17,8 @@ class BusinessMatch extends Model
     protected $fillable = [
         'producer_id',
         'exporter_id',
+        'initiator_type',
+        'initiator_id',
         'score',
         'status',
         'origin',
@@ -24,12 +26,14 @@ class BusinessMatch extends Model
         'tentative_date',
         'message',
         'products',
+        'services',
         'is_read',
         'rejection_reason',
     ];
 
     protected $casts = [
         'products' => 'array',
+        'services' => 'array',
         'tentative_date' => 'date',
         'is_read' => 'boolean',
     ];

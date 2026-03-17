@@ -45,6 +45,11 @@ const menuGroups = computed(() => [
                 params: { sent: true },
             }] : []),
             ...(company.value?.type === 'exporter' || company.value?.type === 'both' ? [{
+                icon: "pi pi-truck",
+                name: "My Services",
+                path: "services.index",
+            },
+            {
                 icon: "pi pi-inbox",
                 name: "Requests",
                 path: "matches.index",

@@ -21,6 +21,7 @@ import { confetti } from '@tsparticles/confetti';
 const props = defineProps({
     match: Object,
     products: Array,
+    services: Array,
 });
 
 const page = usePage();
@@ -296,44 +297,69 @@ const formatCurrency = (amount, currency) => {
 
                                     <!-- Products List -->
                                     <div class="col-span-1 lg:col-span-2 space-y-4">
-                                        <h3 class="font-bold text-black dark:text-white">Products Included</h3>
-                                        <div v-for="product in products" :key="product.id" class="border border-stroke dark:border-strokedark rounded-lg p-4 flex gap-4 bg-gray-50 dark:bg-meta-4">
-                                             <div class="w-24 h-24 rounded overflow-hidden flex-shrink-0 bg-white">
-                                                 <img :src="product.primary_image ? `/storage/${product.primary_image}` : 'https://placehold.co/100'" class="w-full h-full object-cover" />
-                                             </div>
-                                             <div class="flex-1">
-                                                 <div class="flex justify-between items-start">
-                                                     <div>
-                                                         <h4 class="font-bold text-lg dark:text-white">{{ product.name }}</h4>
-                                                         <p class="text-sm text-primary">{{ formatCurrency(product.price_per_unit, product.currency) }} / {{ product.unit_of_measure }}</p>
-                                                     </div>
-                                                     <div class="flex gap-2">
-                                                         <!-- View Details Button -->
-                                                         <Button icon="pi pi-eye" size="small" severity="secondary" outlined @click="openDetailModal(product)" v-tooltip="'View Full Details'" />
-                                                         
-                                                         <!-- Edit Button (Producer Only) -->
-                                                         <div v-if="isProducer">
-                                                             <Button icon="pi pi-pencil" size="small" outlined @click="openEditProduct(product)" label="Edit" />
+                                        <template v-if="products && products.length > 0">
+                                            <h3 class="font-bold text-black dark:text-white">Products Included</h3>
+                                            <div v-for="product in products" :key="product.id" class="border border-stroke dark:border-strokedark rounded-lg p-4 flex gap-4 bg-gray-50 dark:bg-meta-4">
+                                                 <div class="w-24 h-24 rounded overflow-hidden flex-shrink-0 bg-white">
+                                                     <img :src="product.primary_image ? `/storage/${product.primary_image}` : 'https://placehold.co/100'" class="w-full h-full object-cover" />
+                                                 </div>
+                                                 <div class="flex-1">
+                                                     <div class="flex justify-between items-start">
+                                                         <div>
+                                                             <h4 class="font-bold text-lg dark:text-white">{{ product.name }}</h4>
+                                                             <p class="text-sm text-primary">{{ formatCurrency(product.price_per_unit, product.currency) }} / {{ product.unit_of_measure }}</p>
+                                                         </div>
+                                                         <div class="flex gap-2">
+                                                             <!-- View Details Button -->
+                                                             <Button icon="pi pi-eye" size="small" severity="secondary" outlined @click="openDetailModal(product)" v-tooltip="'View Full Details'" />
+                                                             
+                                                             <!-- Edit Button (Producer Only) -->
+                                                             <div v-if="isProducer">
+                                                                 <Button icon="pi pi-pencil" size="small" outlined @click="openEditProduct(product)" label="Edit" />
+                                                             </div>
                                                          </div>
                                                      </div>
-                                                 </div>
-                                                 <p class="text-sm text-gray-500 mt-2 line-clamp-2">{{ product.description }}</p>
-                                                 
-                                                  <!-- Documents -->
-                                                  <div v-if="product.documents && product.documents.length > 0" class="mt-3">
-                                                      <h5 class="text-xs font-semibold text-gray-500 mb-2">Attached Documents:</h5>
-                                                      <div class="flex flex-wrap gap-2">
-                                                          <a v-for="(doc, idx) in product.documents" :key="idx" 
-                                                             :href="`/storage/${doc.path}`" 
-                                                             target="_blank"
-                                                             class="no-underline">
-                                                              <Tag :value="doc.original_name || 'Document'" icon="pi pi-file" severity="info" class="text-xs cursor-pointer hover:bg-blue-100 transition-colors" />
-                                                          </a>
+                                                     <p class="text-sm text-gray-500 mt-2 line-clamp-2">{{ product.description }}</p>
+                                                     
+                                                      <!-- Documents -->
+                                                      <div v-if="product.documents && product.documents.length > 0" class="mt-3">
+                                                          <h5 class="text-xs font-semibold text-gray-500 mb-2">Attached Documents:</h5>
+                                                          <div class="flex flex-wrap gap-2">
+                                                              <a v-for="(doc, idx) in product.documents" :key="idx" 
+                                                                 :href="`/storage/${doc.path}`" 
+                                                                 target="_blank"
+                                                                 class="no-underline">
+                                                                  <Tag :value="doc.original_name || 'Document'" icon="pi pi-file" severity="info" class="text-xs cursor-pointer hover:bg-blue-100 transition-colors" />
+                                                              </a>
+                                                          </div>
                                                       </div>
-                                                  </div>
-                                                  <div v-else class="mt-3 text-xs text-gray-400 italic">No attached documents.</div>
-                                             </div>
-                                        </div>
+                                                      <div v-else class="mt-3 text-xs text-gray-400 italic">No attached documents.</div>
+                                                 </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Services List -->
+                                        <template v-if="services && services.length > 0">
+                                            <h3 class="font-bold text-black dark:text-white mt-6">Services Included</h3>
+                                            <div v-for="service in services" :key="'serv-'+service.id" class="border border-stroke dark:border-strokedark rounded-lg p-4 flex gap-4 bg-gray-50 dark:bg-meta-4">
+                                                 <div class="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-white flex items-center justify-center text-gray-400">
+                                                     <i class="pi pi-truck text-3xl"></i>
+                                                 </div>
+                                                 <div class="flex-1">
+                                                     <div class="flex justify-between items-start">
+                                                         <div>
+                                                             <h4 class="font-bold text-lg dark:text-white">{{ service.name }}</h4>
+                                                             <p class="text-sm text-primary">{{ service.price ? `${service.currency} ${service.price}` : 'Upon Request' }}</p>
+                                                         </div>
+                                                     </div>
+                                                     <p class="text-sm text-gray-500 mt-2 line-clamp-2">{{ service.description }}</p>
+                                                     <div v-if="service.weight_limit || (service.destinations && service.destinations.length > 0)" class="mt-3 space-x-2">
+                                                          <Tag v-if="service.weight_limit" :value="`Limit: ${service.weight_limit}`" severity="secondary" rounded />
+                                                          <Tag v-for="(dest, didx) in service.destinations" :key="'dest-'+didx" :value="dest" severity="info" rounded />
+                                                     </div>
+                                                 </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                              </div>

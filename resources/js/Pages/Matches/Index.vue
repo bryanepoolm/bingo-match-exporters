@@ -106,7 +106,7 @@ const getSeverity = (status) => {
 
 <template>
     <Head title="Connection Requests" />
-
+    <Toast />
     <TailAdminLayout>
         <div class="mx-auto max-w-270">
             <!-- Breadcrumb -->

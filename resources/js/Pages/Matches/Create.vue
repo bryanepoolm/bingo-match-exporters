@@ -12,12 +12,16 @@ import Message from 'primevue/message';
 const props = defineProps({
     targetCompany: Object,
     myProducts: Array,
+    myServices: Array,
+    initiatorType: String,
+    targetType: String,
 });
 
 const currentStep = ref(1);
 const countries = ref([]);
 const form = useForm({
     products: [],
+    services: [],
     origin: null,
     destination: null,
     tentative_date: null,
@@ -48,7 +52,9 @@ const submit = () => {
     form.post(route('matches.store', props.targetCompany.id));
 };
 
-const isStep1Valid = computed(() => form.products.length > 0);
+const isExporterInitiator = computed(() => props.initiatorType === 'exporter' || (props.initiatorType === 'both' && props.targetType === 'producer'));
+
+const isStep1Valid = computed(() => isExporterInitiator.value ? form.services.length > 0 : form.products.length > 0);
 const isStep2Valid = computed(() => form.origin && form.destination && form.tentative_date);
 </script>
 
@@ -108,12 +114,52 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
 
                     <form @submit.prevent="submit">
                         
-                        <!-- Step 1: Products -->
+                        <!-- Step 1: Selection (Products or Services) -->
                         <div v-if="currentStep === 1">
-                            <h4 class="mb-4 text-xl font-semibold text-black dark:text-white">Select Products</h4>
-                            <p class="mb-6 text-sm text-gray-500">Choose the products for this connection request.</p>
+                            <h4 class="mb-4 text-xl font-semibold text-black dark:text-white">
+                                {{ isExporterInitiator ? 'Select Services' : 'Select Products' }}
+                            </h4>
+                            <p class="mb-6 text-sm text-gray-500">
+                                {{ isExporterInitiator ? 'Choose the logistics services you want to offer for this request.' : 'Choose the products for this connection request.' }}
+                            </p>
                             
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Exporter view: Select Services -->
+                            <div v-if="isExporterInitiator" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                                <div v-for="service in myServices" :key="service.id" 
+                                    :class="[
+                                        'cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md flex items-start gap-4',
+                                        form.services.includes(service.id) ? 'border-primary bg-primary/5' : 'border-stroke dark:border-strokedark'
+                                    ]"
+                                    @click="() => {
+                                        if(form.services.includes(service.id)) {
+                                            form.services = form.services.filter(id => id !== service.id);
+                                        } else {
+                                            form.services.push(service.id);
+                                        }
+                                    }">
+                                    
+                                    <div class="flex-shrink-0">
+                                         <Checkbox v-model="form.services" :value="service.id" :inputId="`serv-${service.id}`" @click.stop />
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <div class="h-10 w-10 flex items-center justify-center rounded bg-gray-100 text-gray-500">
+                                                <i class="pi pi-truck text-xl"></i>
+                                            </div>
+                                            <label :for="`serv-${service.id}`" class="font-medium text-black dark:text-white cursor-pointer select-none">
+                                                {{ service.name }}
+                                            </label>
+                                        </div>
+                                        <p class="text-xs text-gray-500 line-clamp-2">{{ service.description }}</p>
+                                    </div>
+                                </div>
+                                <div v-if="!myServices || myServices.length === 0" class="col-span-full text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
+                                    <p>No services available to select. <Link :href="route('services.create')" class="text-primary hover:underline">Create a service</Link> first.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Producer view: Select Products -->
+                            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                 <div v-for="product in myProducts" :key="product.id" 
                                     :class="[
                                         'cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md flex items-start gap-4',
@@ -140,11 +186,12 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
                                         </label>
                                     </div>
                                 </div>
+                                <div v-if="!myProducts || myProducts.length === 0" class="col-span-full text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
+                                    <p>No products available to select. <Link :href="route('products.create')" class="text-primary hover:underline">Create a product</Link> first.</p>
+                                </div>
                             </div>
-                             <div v-if="myProducts.length === 0" class="text-center py-4 bg-gray-50 dark:bg-gray-800 rounded">
-                                <p>No products available to select.</p>
-                            </div>
-                            <Message v-if="form.errors.products" severity="error" :closable="false">{{ form.errors.products }}</Message>
+                            
+                            <Message v-if="form.errors.products || form.errors.services" severity="error" :closable="false">{{ form.errors.products || form.errors.services }}</Message>
                         </div>
 
                         <!-- Step 2: Logistics -->
