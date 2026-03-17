@@ -3,6 +3,10 @@ import { ref, onMounted } from 'vue';
 import { useSidebar } from '@/Composables/useSidebar';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import { useToast } from 'primevue/usetoast';
+import Toast from 'primevue/toast';
+
+const toast = useToast();
 
 const { toggleSidebar, toggleMobileSidebar, isMobileOpen } = useSidebar();
 const page = usePage();
@@ -103,6 +107,14 @@ onMounted(() => {
                     };
                     notifications.value.unshift(newNotification);
                     unreadCount.value++;
+                    
+                    toast.add({ 
+                        group: 'nav-notif', 
+                        severity: 'info', 
+                        summary: 'New Notification', 
+                        detail: newNotification.data.message || 'You have a new notification', 
+                        life: 5000 
+                    });
                 });
         }
     }
@@ -114,6 +126,7 @@ const logout = () => {
 </script>
 
 <template>
+    <Toast group="nav-notif" position="top-right" />
     <header class="sticky top-0 flex w-full bg-white border-gray-200 z-40 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
         <div class="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
             <div class="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">

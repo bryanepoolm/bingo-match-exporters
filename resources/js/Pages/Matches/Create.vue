@@ -246,9 +246,10 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
                                 type="button" 
                                 @click="prevStep" 
                                 v-if="currentStep > 1"
-                                class="flex justify-center rounded border border-stroke bg-gray p-3 font-medium text-black hover:bg-opacity-90 dark:border-strokedark dark:bg-meta-4 dark:text-white"
+                                class="flex items-center justify-center gap-2 rounded-md border border-stroke bg-transparent py-2.5 px-6 font-semibold text-black transition-all duration-300 hover:bg-gray-2 dark:border-strokedark dark:text-white dark:hover:bg-meta-4"
                             >
-                                Back
+                                <i class="pi pi-arrow-left text-xs font-bold"></i>
+                                <span>Back</span>
                             </button>
                             <div v-else></div> <!-- Spacer -->
 
@@ -257,19 +258,21 @@ const isStep2Valid = computed(() => form.origin && form.destination && form.tent
                                 @click="nextStep" 
                                 v-if="currentStep < 3"
                                 :disabled="currentStep === 1 ? !isStep1Valid : !isStep2Valid"
-                                class="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="flex items-center justify-center gap-2 rounded-md border border-primary bg-primary/5 py-2.5 px-6 font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed dark:border-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary dark:hover:text-white"
                             >
-                                Next
+                                <span>Next</span>
+                                <i class="pi pi-arrow-right text-xs font-bold"></i>
                             </button>
 
                             <button 
                                 v-if="currentStep === 3"
                                 type="submit"
                                 :disabled="form.processing"
-                                class="flex justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90 disabled:opacity-50"
+                                class="flex items-center justify-center gap-2 rounded-md border border-primary bg-primary/5 py-2.5 px-6 font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed dark:border-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary dark:hover:text-white"
                             >
-                                <i class="pi pi-check mr-2" v-if="!form.processing"></i>
-                                {{ form.processing ? 'Sending...' : 'Send Request' }}
+                                <i class="pi pi-check text-xs font-bold" v-if="!form.processing"></i>
+                                <i class="pi pi-spin pi-spinner text-xs font-bold" v-else></i>
+                                <span>{{ form.processing ? 'Sending...' : 'Send Request' }}</span>
                             </button>
                         </div>
                     </form>

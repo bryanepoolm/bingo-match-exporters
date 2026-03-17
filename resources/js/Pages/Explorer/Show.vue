@@ -60,17 +60,14 @@ const formatCurrency = (amount, currency) => {
                         <p class="font-medium">{{ company.type }}</p>
                         
                         <!-- Connect Button -->
-                         <div v-if="currentUserCompany && currentUserCompany.id !== company.id" class="mx-auto mt-4.5 mb-5.5 grid max-w-94 grid-cols-1 rounded-md border border-stroke py-2.5 shadow-1 dark:border-strokedark dark:bg-[#37404F]">
-                            <div class="flex flex-col items-center justify-center gap-1 border-r border-stroke px-4 dark:border-strokedark xsm:flex-row">
-                                <span class="font-semibold text-black dark:text-white">
-                                    <Link 
-                                        :href="route('matches.create', company.id)" 
-                                        class="flex justify-center rounded bg-primary py-2 px-6 font-medium text-gray hover:bg-opacity-90"
-                                    >
-                                        Connect
-                                    </Link>
-                                </span>
-                            </div>
+                         <div v-if="currentUserCompany && currentUserCompany.id !== company.id" class="mx-auto mt-6 mb-6 max-w-94">
+                            <Link 
+                                :href="route('matches.create', company.id)" 
+                                class="flex w-full items-center justify-center gap-2 rounded-md border border-primary bg-primary/5 py-3 px-6 text-base font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-white dark:border-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary dark:hover:text-white shadow-sm hover:shadow-md"
+                            >
+                                <span>Connect with {{ company.name }}</span>
+                                <i class="pi pi-arrow-right text-sm font-bold"></i>
+                            </Link>
                         </div>
 
                         <!-- Info Grid -->

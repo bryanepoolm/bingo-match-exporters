@@ -97,8 +97,9 @@ const getBadgeColor = (type) => {
                                     No specific capabilities listed.
                                 </div>
 
-                                <Link :href="route('explorer.show', company.id)" class="flex w-full justify-center rounded bg-primary p-3 font-medium text-gray hover:bg-opacity-90">
-                                    Connect <i class="pi pi-arrow-right ml-2"></i>
+                                <Link :href="route('explorer.show', company.id)" class="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-primary bg-primary/5 py-2.5 px-4 text-sm font-semibold text-primary transition-all duration-300 hover:bg-primary hover:text-white dark:border-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary dark:hover:text-white">
+                                    <span>View Profile & Connect</span>
+                                    <i class="pi pi-arrow-right text-xs font-bold"></i>
                                 </Link>
                             </div>
                         </div>
